@@ -4,9 +4,9 @@ set -euo pipefail
 
 host_ssh_port=22
 
-iso_url="https://projects.intra.42.fr/uploads/document/document/2832/BornToSecHackMe-v1.1.iso"
+iso_url="https://projects.intra.42.fr/uploads/document/document/7198/BornToSecHackMe-v1.1.iso"
 
-vm_dir="$PWD"
+[ -d "$HOME/goinfre" ] && vm_dir="$HOME/goinfre" || vm_dir="$PWD"
 
 vm_os="Linux_64"
 vm_image="$vm_dir/$(basename "$iso_url")"
@@ -14,7 +14,7 @@ vm_name="Boot2Root"
 vm_ram="1024"
 vm_vram="0"
 vm_gfx="none"
-vm_net="hostonly"
+vm_net="hostonly" # hostonly bridged
 vm_bridge_adapter="en0"
 vm_hostonly_adapter="vboxnet0"
 
@@ -91,11 +91,12 @@ vm_net_nat_up()
 
 vm_up()
 {
+	local src_dir="$PWD"
 	if ! vm_exists
 	then
 		# Download the disk image.
 		pushd "$(dirname "$vm_image")"
-			while ! md5sum --check md5sums
+			while ! md5sum --check "$src_dir/md5sums"
 			do
 				echo "Fetching '$vm_image'..."
 
