@@ -2,6 +2,8 @@
 
 FILTERS=()
 
+[ $# -eq 0 ] && set -- login logout success failure sudo
+
 for arg in "$@"
 do
 	case "$arg"
