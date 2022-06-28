@@ -147,13 +147,38 @@ vm_down()
 	fi
 }
 
+vm_mac()
+{
+	VBoxManage showvminfo Boot2Root --machinereadable \
+	| grep -m1 'macaddress[[:digit:]]\+' \
+	| cut -d '=' -f 2- \
+	| tr -d '"'
+}
+
+vm_ipv4_hostonly()
+{
+	local mac_address
+
+	mac_address=$(vm_mac)
+
+	VBoxManage dhcpserver findlease \
+		--interface="$vm_hostonly_adapter" --mac-address="$mac_address" \
+	| grep IP -m1 | cut -d ':' -f2- | tr -d ' '
+}
+
+vm_ipv4_bridged()
+{
+	VBoxManage guestproperty get "$vm_name" /VirtualBox/GuestInfo/Net/0/V4/IP \
+	| cut -d' ' -f2
+}
+
 vm_ipv4()
 {
 	if vm_running
 	then
 		case "$vm_net" in
-			"hostonly"	)	ifconfig vboxnet0 | egrep "inet\s*([0-9\.])*" -o | cut -d ' ' -f 2;;
-			"bridged"	)	VBoxManage guestproperty get "$vm_name" /VirtualBox/GuestInfo/Net/0/V4/IP | cut -d' ' -f2;;
+			"hostonly"	)	vm_ipv4_hostonly;;
+			"bridged"	)	vm_ipv4_bridged;;
 			"nat"		)	echo "localhost";;
 			"*"			)	echo "The '$vm_net' network mode is not supported!"
 		esac
