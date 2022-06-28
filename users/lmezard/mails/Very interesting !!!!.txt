@@ -1,0 +1,26 @@
+Subject:	Very interesting !!!!
+From:		qudevide@mail.borntosec.net
+Date:		Thu, October 8, 2015 11:22 pm
+To:			laurie@borntosec.net
+Priority:	Normal
+
+WinDev est un atelier de génie logiciel (AGL) édité par la société
+française PC SOFT et conçu pour développer des applications,
+principalement orientées données pour Windows 8, 7, Vista, XP, 2008, 2003,
+2000, mais également pour Linux, .Net et Java. Il propose son propre
+langage, appelé le WLangage. La première version de l'AGL est sortie en
+1993. Apparenté à WebDev et WinDev Mobile.
+
+La communauté autour de WinDev
+Tour De France Technique
+Chaque année, entre le mois de mars et le mois de mai, PC SOFT organise
+dans toute la France ce qu'ils appellent le TDF Tech (Tour De France
+Technique). Cet événement d'une demi-journée a pour but d'informer et de
+présenter les nouveautés de chaque version. Pendant cette courte
+formation, les différents intervenants utilisent un grand nombre
+d'applications pré-conçues dans lesquelles ils ont intégré les multiples
+nouveautés, tout en exploitant le matériel (serveurs, téléphones) qu'ils
+ont apporté. Non seulement, WinDev est largement mis en avant, mais aussi
+les autres environnements : WebDev et WinDev Mobile. Le code source des
+sujets présentés ainsi qu'un support de cours sont remis à chaque
+participant.

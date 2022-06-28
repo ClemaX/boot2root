@@ -267,3 +267,22 @@ We can also access his private profile area, where we can find his email address
 The directory enumeration found a directory called `webmail`.
 Let's try to access it using this email address.
 
+#### webmail
+
+The mail application is called `SquirrelMail`.
+
+The login is successfull and leads us to an inbox containing some mail:
+- DB Access - qudevide@mail.borntosec.net
+- Very interesting !!!! - qudevide@mail.borntosec.net
+
+The mail titled `DB Access` seems very interesting, as it seems to contain root access to some databases.
+
+```
+Hey Laurie,
+
+You cant connect to the databases now. Use root/Fg-'kKXBj87E:aJ$
+
+Best regards.
+```
+
+The enumeration also found a directory called `phpmyadmin`, which may enable us to interact with SQL databases.
