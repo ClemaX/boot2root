@@ -42,7 +42,7 @@ print_vm_stopped()
 {
 	echo -e "'$vm_name' is not running!
 
-Use '$0 up' to start it up." 1>&2
+Use '$0 up' to start it up."
 }
 
 print_vm_started()
@@ -66,9 +66,9 @@ vm_checkif()
 {
 	local ifname="$1"
 
-	echo "Checking for interface $ifname..."
+	echo "Checking for interface $ifname..." >&2
 
-	ifconfig "$ifname"
+	ifconfig "$ifname" >/dev/null 2>&1
 }
 
 vm_net_hostonly_up()
@@ -109,7 +109,7 @@ vm_up()
 		# Create and register vm in current working directory.
 		VBoxManage createvm --name "$vm_name" --ostype "$vm_os" --register --basefolder "$vm_dir"
 		VBoxManage modifyvm "$vm_name" --memory "$vm_ram" --vram "$vm_vram" --graphicscontroller "$vm_gfx" --nic1 "$vm_net"
-	
+
 		case "$vm_net" in
 			"hostonly"	)	vm_net_hostonly_up;;
 			"bridged"	)	vm_net_bridged_up;;
@@ -128,7 +128,7 @@ vm_up()
 		echo "Starting '$vm_name'..."
 		VBoxManage startvm "$vm_name" --type headless
 	else
-		print_vm_started 2>&1
+		print_vm_started >&2
 		return 1
 	fi
 }
@@ -139,7 +139,7 @@ vm_down()
 	then
 		if vm_running
 		then
-			echo "Waiting for '$vm_name' to power off,,,"
+			echo "Waiting for '$vm_name' to power off..."
 			VBoxManage controlvm "$vm_name" poweroff && sleep 2
 		fi
 		echo "Tearing down '$vm_name'..."
@@ -180,10 +180,10 @@ vm_ipv4()
 			"hostonly"	)	vm_ipv4_hostonly;;
 			"bridged"	)	vm_ipv4_bridged;;
 			"nat"		)	echo "localhost";;
-			"*"			)	echo "The '$vm_net' network mode is not supported!"
+			"*"			)	echo "The '$vm_net' network mode is not supported!" >&2; return 1;;
 		esac
 	else
-		print_vm_stopped 2>&1
+		print_vm_stopped >&2
 		return 1
 	fi
 }
@@ -194,8 +194,8 @@ vm_ssh() # user
 
 	if [ -z "$user" ]
 	then
-		echo "$0: ssh: Missing user argument." 2>&1
-		print_ssh_usage 2>&1
+		echo "$0: ssh: Missing user argument." >&2
+		print_ssh_usage >&2
 		return 1
 	fi
 
@@ -210,14 +210,14 @@ vm_ssh() # user
 
 		local pass="${user##*:}"
 
-		if ! [ -z "$pass" ]
+		if [ -n "$pass" ]
 		then
 			"$(dirname "$0")/utils/pass.exp" "$pass" ssh -p "$port" "${user%%:*}@$(vm_ipv4)"
 		else
 			ssh -p "$port" "$user@$(vm_ipv4)"
 		fi
 	else
-		print_vm_stopped 2>&1
+		print_vm_stopped >&2
 		return 1
 	fi
 }
@@ -226,7 +226,7 @@ case "${1:-}" in
 	"up" | ""	)	vm_up;;
 	"down"		)	vm_down;;
 	"ip"		)	vm_ipv4;;
-	"ssh"		)	shift; vm_ssh $@;;
+	"ssh"		)	shift; vm_ssh "$@";;
 	"help"		)	print_help;;
 	*			)	print_help && exit 1;;
 esac

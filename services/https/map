@@ -1,5 +1,11 @@
+4 results found
 /
 ├── cgi-bin
 ├── forum
 ├── phpmyadmin
 └── webmail
+
+https://boot2root.vm/cgi-bin/ [403] [GET]
+https://boot2root.vm/forum [301] [GET]
+https://boot2root.vm/phpmyadmin [301] [GET]
+https://boot2root.vm/webmail [301] [GET]

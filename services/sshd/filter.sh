@@ -18,7 +18,8 @@ do
 	shift
 done
 
-sed -e '/CRON\[[0-9]*\]/d' \
+sed \
 	"${FILTERS[@]}" \
 	-e '/sshd\[[0-9]*\]/d' \
-	-e '/ sudo/d'
+	-e '/ sudo/d' \
+	-e '/CRON\[[0-9]*\]/d'
