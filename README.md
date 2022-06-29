@@ -166,7 +166,8 @@ There are five kinds of interactions in this log file:
 
 Using the `success` filter, we can find out which users had `SSH` access:
 ```bash
-pushd ../sshd
+popd
+pushd sshd
 
 < log ./filter.sh success
 ```
@@ -232,7 +233,7 @@ failure:    admin@46.159.82.56:38179
 ```
 
 One of the usernames seems pretty uncommon: `!q\]Ej?*5K5cy*AJ`.
-Let's try to find it's context:
+Let's try to find its context:
 
 ```bash
 < log ./filter.sh | grep '5K5cy' --context=3
@@ -644,3 +645,487 @@ Password: G!@M6f4Eatau{sF"
 ```
 lmezard@BornToSecHackMe:/var/www/forum/templates_c$
 ```
+
+Nice, so now we're logged in as the user `lmezard`.
+Let's take a look at his home directory:
+```bash
+cd
+ls -l
+```
+```
+total 791
+-rwxr-x--- 1 lmezard lmezard 808960 Oct  8  2015 fun
+-rwxr-x--- 1 lmezard lmezard     96 Oct 15  2015 README
+```
+
+```bash
+cat README
+```
+```
+Complete this little challenge and use the result as password for user 'laurie' to login in ssh
+```
+
+## Challenges
+
+### fun
+```bash
+popd; popd
+pushd users; pushd lmezard/fun
+```
+
+```bash
+file fun
+```
+```
+fun: POSIX tar archive (GNU)
+```
+
+Let's try to download this file to our machine for further analysis.
+I'll use the `netcat` utility to create a `TCP` listener. 
+```bash
+nc -l 5556 < fun
+```
+
+Now we can connect and retrieve the file using:
+```bash
+nc --recv-only boot2root.vm 5556 > fun.tar
+```
+
+Let's look at the archive's contents:
+```
+tar xf fun.tar
+```
+
+The archive contains a directory named `ft_fun`.
+```
+file ft_fun/*
+```
+```
+ft_fun/00M73.pcap: ASCII text
+...
+ft_fun/YDMXW.pcap: ASCII text
+ft_fun/YJR5Z.pcap: C source, ASCII text
+ft_fun/YL7B7.pcap: ASCII text
+...
+ft_fun/ZQTK1.pcap: ASCII text
+```
+
+There are 751 files containing ASCII text, with one file being identified as C source.
+
+```bash
+wc -l ft_fun/*
+```
+```
+    2 00M73.pcap
+    ...
+    2 BI0RD.pcap
+ 1266 BJPCP.pcap
+    2 BN32A.pcap
+    ...
+    2 ZQTK1.pcap
+ 2764 total
+```
+
+Each file is contains two lines, bessides `BJPCP.pcap` which contains a lot more.
+
+Let's look at this big file's contents:
+```c
+}void useless() {
+	printf("Hahahaha Got you!!!\n");
+}
+...
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}*/
+char getme9() {
+	return 'n';
+}
+/*
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}
+...
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}*/
+char getme10() {
+	return 'a';
+}
+/*
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}
+...
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}*/
+char getme11() {
+	return 'g';
+}
+/*
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}
+...
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}*/
+char getme12()
+{
+	return 'e';
+}
+/*
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}
+...
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}*/
+int main() {
+	printf("M");
+	printf("Y");
+	printf(" ");
+	printf("P");
+	printf("A");
+	printf("S");
+	printf("S");
+	printf("W");
+	printf("O");
+	printf("R");
+	printf("D");
+	printf(" ");
+	printf("I");
+	printf("S");
+	printf(":");
+	printf(" ");
+	printf("%c",getme1());
+	printf("%c",getme2());
+	printf("%c",getme3());
+	printf("%c",getme4());
+	printf("%c",getme5());
+	printf("%c",getme6());
+	printf("%c",getme7());
+	printf("%c",getme8());
+	printf("%c",getme9());
+	printf("%c",getme10());
+	printf("%c",getme11());
+	printf("%c",getme12());
+	printf("\n");
+	printf("Now SHA-256 it and submit");
+}
+/*
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}
+...
+void useless() {
+	printf("Hahahaha Got you!!!\n");
+}
+*/
+//file750
+```
+
+This looks like some c code, but it looks like a part of the file is missing.
+
+Between the useless noise, there is a function that prints `MY PASSWORD IS: `, followed by characters returned from different functions, ranging from `getme1` to `getme12`.
+
+The password is followed by an instruction that tells us to hash the password before using it.
+
+At the bottom of the file, there is a line containing a line comment stating `file750`.
+
+Let's look at some other files:
+```bash
+cat 00M73.pcap
+```
+```
+void useless() {
+
+//file12
+```
+
+```bash
+cat 01IXJ.pcap
+```
+```
+}void useless() {
+
+//file265
+```
+
+The contents seem similar to the c code, and the last line always contains an identifier.
+
+Let's try to concatenate all the files and filter out the noise:
+
+```bash
+cat * | sed -e '/void useless()/d' -e '/Hahaha/d' -e '/^$/d'
+```
+```
+//file302/*
+//file431char getme4() {
+//file373char getme7() {
+//file736char getme1() {
+//file668char getme5() {
+//file601/*
+//file108}*/
+//file349}
+//file483   return 'a';
+//file722char getme6() {
+//file697   return 'I';
+//file138char getme3() {
+} */
+char getme8() {
+    return 'w';
+}
+/*
+}*/
+char getme9() {
+    return 'n';
+}
+/*
+}*/
+char getme10() {
+    return 'a';
+}
+/*
+}*/
+char getme11() {
+    return 'g';
+}
+/*
+}*/
+char getme12()
+{
+    return 'e';
+}
+/*
+}*/
+int main() {
+    printf("M");
+    printf("Y");
+    printf(" ");
+    printf("P");
+    printf("A");
+    printf("S");
+    printf("S");
+    printf("W");
+    printf("O");
+    printf("R");
+    printf("D");
+    printf(" ");
+    printf("I");
+    printf("S");
+    printf(":");
+    printf(" ");
+    printf("%c",getme1());
+    printf("%c",getme2());
+    printf("%c",getme3());
+    printf("%c",getme4());
+    printf("%c",getme5());
+    printf("%c",getme6());
+    printf("%c",getme7());
+    printf("%c",getme8());
+    printf("%c",getme9());
+    printf("%c",getme10());
+    printf("%c",getme11());
+    printf("%c",getme12());
+    printf("\n");
+    printf("Now SHA-256 it and submit");
+}
+/*
+}
+*/
+//file15}
+//file432} */
+//file688}
+//file161   return 'e';
+//file540}
+//file632char getme2() {
+//file314}
+//file252   return 't';
+//file102}*/
+//file703}
+//file128/*
+//file497/*
+//file141/*
+//file239}*/
+//file271
+//file163   return 'p';
+//file640   return 'r';
+//file254}
+//file445}
+//file157/*
+//file256}
+//file479}
+//file427}*/
+//file281/*
+//file596*/
+//file503#include <stdio.h>
+//file3 return 'h';
+//file687
+```
+
+All files seem to be parts of the c program, but they are not named according to their order.
+
+Knowing that their is a total of 750 files, and that the identifier of the long file is file750, we can deduce that the identifier corresponds to the order of each part.
+
+We can sort the files according to this identifier and concatenate them, to get the code in the right order.
+
+I wrote a script to filter out the noise, sort the files and concatenate them.
+```bash
+./filter.sh
+```
+```c
+#include <stdio.h>
+}
+char getme1() {
+    return 'I';
+}
+/*
+}
+}*/
+char getme2() {
+    return 'h';
+}
+
+/*
+}
+*/
+char getme3() {
+    return 'e';
+}
+/*
+}*/
+char getme4() {
+    return 'a';
+}
+/*
+} */
+char getme5() {
+    return 'r';
+}
+/*
+}*/
+char getme6() {
+    return 't';
+}
+/*
+}*/
+char getme7() {
+    return 'p';
+}
+/*
+} */
+char getme8() {
+    return 'w';
+}
+/*
+}*/
+char getme9() {
+    return 'n';
+}
+/*
+}*/
+char getme10() {
+    return 'a';
+}
+/*
+}*/
+char getme11() {
+    return 'g';
+}
+/*
+}*/
+char getme12()
+{
+    return 'e';
+}
+/*
+}*/
+int main() {
+    printf("M");
+    printf("Y");
+    printf(" ");
+    printf("P");
+    printf("A");
+    printf("S");
+    printf("S");
+    printf("W");
+    printf("O");
+    printf("R");
+    printf("D");
+    printf(" ");
+    printf("I");
+    printf("S");
+    printf(":");
+    printf(" ");
+    printf("%c",getme1());
+    printf("%c",getme2());
+    printf("%c",getme3());
+    printf("%c",getme4());
+    printf("%c",getme5());
+    printf("%c",getme6());
+    printf("%c",getme7());
+    printf("%c",getme8());
+    printf("%c",getme9());
+    printf("%c",getme10());
+    printf("%c",getme11());
+    printf("%c",getme12());
+    printf("\n");
+    printf("Now SHA-256 it and submit");
+}
+/*
+}
+```
+
+Nice, so the password is `Iheartpwnage`, let's get the `SHA-256` hash:
+```bash
+echo -n Iheartpwnage | sha256sum
+```
+```
+330b845f32185747e4f8ca15d40ca59796035c89ea809fb5d30f4da83ecf45a4
+```
+
+We can now connect to the machine using `SSH` using the user `laurie`:
+```bash
+ssh laurie@boot2root.vm
+```
+```
+laurie@BornToSecHackMe:~$
+```
+
+```bash
+ls -l
+```
+```
+total 27
+-rwxr-x--- 1 laurie laurie 26943 Oct  8  2015 bomb
+-rwxr-x--- 1 laurie laurie   158 Oct  8  2015 README
+```
+
+```bash
+cat README
+```
+```
+Diffuse this bomb!
+When you have all the password use it as "thor" user with ssh.
+
+HINT:
+P
+ 2
+ b
+
+o
+4
+
+NO SPACE IN THE PASSWORD (password is case sensitive).
+```
+
+```bash
+file bomb
+```
+```
+bomb: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.0.0, not stripped
+```
+
+I downloaded the file using the previous method, to inspect it on my local machine.
