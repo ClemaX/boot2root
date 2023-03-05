@@ -121,7 +121,7 @@ The page is titled `HackMe` and there are several topics:
 - Probleme login ? - lmezard
 - Gasolina - qudevide
     - Gasolina - zaz
-- Les mouettes ! 
+- Les mouettes !
     - Les mouettes ! - thor
 ---
 
@@ -376,8 +376,8 @@ mysql:x:106:115:MySQL Server,,,:/nonexistent:/bin/false
 ftp:x:107:116:ftp daemon,,,:/srv/ftp:/bin/false
 dovecot:x:108:117:Dovecot mail server,,,:/usr/lib/dovecot:/bin/false
 dovenull:x:109:65534:Dovecot login user,,,:/nonexistent:/bin/false
-
 postfix:x:110:118::/var/spool/postfix:/bin/false
+
 ft_root:x:1000:1000:ft_root,,,:/home/ft_root:/bin/bash
 lmezard:x:1001:1001:laurie,,,:/home/lmezard:/bin/bash
 laurie@borntosec.net:x:1002:1002:Laurie,,,:/home/laurie@borntosec.net:/bin/bash
@@ -439,7 +439,7 @@ The tool attempts to store data into files, by concatenating the web root with f
 
 We can input a list of subdirectories we expect, according to the urls of the web applications:
 ```bash
-./fuzzfile.sh $(tr '/' ' ' < root.mysql.credentials) << EOF 
+./fuzzfile.sh $(tr '/' ' ' < root.mysql.credentials) << EOF
 cgi-bin
 forum
 phpmyadmin
@@ -470,7 +470,7 @@ curl -L -O 'https://github.com/ilosuna/mylittleforum/archive/refs/tags/20220529.
 
 pushd mylittleforum-20220529.1
 
-ls -1
+ls -l
 
 cat README.md
 
@@ -681,7 +681,7 @@ fun: POSIX tar archive (GNU)
 ```
 
 Let's try to download this file to our machine for further analysis.
-I'll use the `netcat` utility to create a `TCP` listener. 
+I'll use the `netcat` utility to create a `TCP` listener.
 ```bash
 nc -l 5556 < fun
 ```
@@ -1129,3 +1129,489 @@ bomb: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically link
 ```
 
 I downloaded the file using the previous method, to inspect it on my local machine.
+
+### bomb
+```bash
+popd
+pushd laurie/bomb
+```
+
+```bash
+./bomb
+```
+
+```
+Welcome this is my little bomb !!!! You have 6 stages with
+only one life good luck !! Have a nice day!
+
+BOOM!!!
+The bomb has blown up.
+```
+
+The program reads the standard input, and seems to expect specific answers. There seem to be 6 stages to solve and diffuse the bomb, according to the `README`.
+
+I used `radare2` to disassemble the file and understand the checks performed on the input.
+
+I created some scripts, ranging from `phase_1.sh` to `phase_7.sh` to define the input for each stage of the bomb.
+
+When there are multiple valid inputs, we can use the hint to make our choice.
+
+#### phase 1
+```c
+void phase_1(const char *input)
+
+{
+    bool not_equal;
+    
+    not_equal = strings_not_equal(input, "Public speaking is very easy.");
+    if (not_equal)
+        explode_bomb();
+}
+
+```
+Expected input:
+```
+Public speaking is very easy.
+```
+
+#### phase 2
+```c
+void read_six_numbers(const char *input, int *dest)
+{
+    int n_conv;
+    
+    n_conv = sscanf(input, "%d %d %d %d %d %d", dest, dest + 1, dest + 2,
+        dest + 3, dest + 4, dest + 5);
+s
+    if (n_conv < 6)
+        explode_bomb();
+}
+
+void phase_2(const char *input)
+{
+    int         i;
+    int         nums[6];
+    
+    read_six_numbers(input, nums);
+
+    if (nums[0] != 1)
+        explode_bomb();
+
+    i = 1;
+    do {
+        if (nums[i] != (i + 1) * nums[i - 1])
+            explode_bomb();
+        i++;
+    } while (i < 6);
+}
+```
+
+Expected input:
+```
+1 2 6 24 120 720
+```
+
+#### phase 3
+```c
+void phase_3(const char *input)
+{
+    int     n_conv;
+    char    expected_character;
+    unsigned    number_a;
+    char    character;
+    int     number_b;
+    
+    n_conv = sscanf(input, "%d %c %d", &number_a, &character, &number_b);
+
+    if (n_conv < 3) {
+        explode_bomb();
+    }
+
+    switch(number_a) {
+    case 0:
+        expected_character = 'q';
+        if (number_b != 777)
+            explode_bomb();
+        break;
+    case 1:
+        expected_character = 'b';
+        if (number_b != 214)
+            explode_bomb();
+        break;
+    case 2:
+        expected_character = 'b';
+        if (number_b != 755)
+            explode_bomb();
+        break;
+    case 3:
+        expected_character = 'k';
+        if (number_b != 251)
+            explode_bomb();
+        break;
+    case 4:
+        expected_character = 'o';
+        if (number_b != 160)
+            explode_bomb();
+        break;
+    case 5:
+        expected_character = 't';
+        if (number_b != 458)
+            explode_bomb();
+        break;
+    case 6:
+        expected_character = 'v';
+        if (number_b != 780)
+            explode_bomb();
+        break;
+    case 7:
+        expected_character = 'b';
+        if (number_b != 524)
+            explode_bomb();
+        break;
+    default:
+        explode_bomb();
+    }
+
+    if (character != expected_character)
+        explode_bomb();
+}
+```
+
+One of the following combinations must be used to prevent the bomb from exploding:
+| number_a | character | number_b |
+|:--------:|:---------:|:--------:|
+|     0    |     q     |    777   |
+|     1    |     b     |    214   |
+|     2    |     b     |    755   |
+|     3    |     k     |    251   |
+|     4    |     o     |    160   |
+|     5    |     t     |    458   |
+|     6    |     v     |    780   |
+|     7    |     b     |    524   |
+
+Expected input:
+```
+0 q 777
+```
+
+#### phase 4
+```c
+// This function gets a value in the fibonacci sequence, according to its position
+int func4(int pos)
+{
+    int         prev;
+    int         value;
+    
+    if (pos < 2)
+        value = 1;
+    else {
+        prev = func4(pos + -1);
+        value = func4(pos + -2) + prev;
+    }
+
+    return value;
+}
+
+void phase_4(const char *input)
+{
+    int n_conv;
+    int position;
+    
+    n_conv = sscanf(input, "%d", &position);
+    if (i == 1 && position > 0) {
+        //  1  2  3  4  5  6  7  8  9
+        //  1  2  3  5  8  13 21 34 55 ...
+        if (func4(position) != 55)
+            explode_bomb();
+        return;
+    }
+    explode_bomb();
+}
+```
+
+Expected input:
+```
+9
+```
+
+#### phase 5
+```c
+const char  *key = "isrveawhobpnutfg";
+
+void phase_5(const char *input)
+{
+    int         i;
+    const char  *plain_text;
+    
+    if (string_length(input) != 6)
+        explode_bomb();
+
+    i = 0;
+    do {
+        plain_text[i] = key[input[i] & 0xf];
+        i = i + 1;
+    } while (i < 6);
+
+    if (strings_not_equal(&plain_text, "giants"))
+        explode_bomb();
+}
+```
+
+The expected input is the string `giants` encoded with the key `isrveawhobpnutfg`.
+The key is 16 characters long and each input character's lower two-bytes determine the position of the decoded character in the key.
+
+For example:
+| Encoded | Lower two bytes | Decoded |
+|:-------:|:---------------:|:-------:|
+|    a    |       0x1       |    s    |
+|    b    |       0x2       |    r    |
+|    c    |       0x3       |    v    |
+|    d    |       0x4       |    e    |
+|    e    |       0x5       |    a    |
+|    f    |       0x6       |    w    |
+|    g    |       0x7       |    h    |
+|    h    |       0x8       |    o    |
+|    i    |       0x9       |    b    |
+|    j    |       0xa       |    p    |
+|    k    |       0xb       |    n    |
+|    l    |       0xc       |    u    |
+|    m    |       0xd       |    t    |
+|    n    |       0xe       |    f    |
+|    o    |       0xf       |    g    |
+|    p    |       0x0       |    i    |
+
+Expected input:
+```
+opekmq
+```
+
+#### phase 6
+```c
+typedef struct node
+{
+	int				content;
+	struct node*	next;
+} node;
+
+node node1 = {0x0fd, 1};
+node node2 = {0x2d5, 2};
+node node3 = {0x12d, 3};
+node node4 = {0x3e5, 4};
+node node5 = {0x0d4, 5};
+node node6 = {0x1b0, 6};
+
+void phase_6(const char *input)
+{
+    node	*next;
+    int		j;
+    node	*selected;
+    node	*current;
+    int		i;
+    node	*nodes[6];
+    int		nums[6];
+
+    read_six_numbers(input, nums);
+
+	// No number > 6, no duplicates
+    i = 0;
+    do {
+        j = i;
+        if (nums[i] > 6)
+            explode_bomb();
+
+        while (j < 5)
+            if (nums[i] == nums[++j + 1])
+                explode_bomb();
+        i++;
+    } while (i < 6);
+
+	// Select nodes based on index(1..6)
+    i = 0;
+    do {
+        selected = &node1;
+        j = 1;
+        if (nums[i] > 1) {
+            do {
+                selected = selected->next;
+            } while (j++ < nums[i]);
+        }
+        nodes[i] = selected;
+        i++;
+    } while (i < 6);
+
+	// Relink nodes according to selection
+    i = 1;
+    current = nodes[0];
+    do {
+        next = nodes[i];
+        current->next = next;
+        i++;
+        current = next;
+    } while (i < 6);
+    next->next = NULL;
+
+	// Check that nodes contents are in descending order
+    i = 0;
+    do {
+        if (nodes[0]->content < nodes[0]->next->content)
+            explode_bomb();
+        nodes[0] = nodes[0]->next;
+        i++;
+    } while (i < 5);
+}
+```
+
+Expected input:
+```
+4 2 6 3 1 5
+```
+
+Using these inputs, we should be able to defuse the bomb:
+```
+./solve.sh | ./bomb
+```
+```
+Welcome this is my little bomb !!!! You have 6 stages with
+only one life good luck !! Have a nice day!
+Phase 1 defused. How about the next one?
+That's number 2.  Keep going!
+Halfway there!
+So you got that one.  Try this one.
+Good work!  On to the next...
+Congratulations! You've defused the bomb!
+```
+
+#### secret stage
+
+There is also a secret stage, but it is not part of the input described in the hint.
+
+```c
+static int  num_input_strings;
+
+static char input_strings[7][50];
+
+struct btree {
+    int             content;
+    struct btree    *left;
+    struct btree    *right;
+};
+
+struct btree n1;
+
+int fun7(const struct btree *tree, int num)
+{
+    int value;
+
+    if (tree == NULL)
+        value = -1;
+    else if (num < tree->content)
+        value = fun7(tree->left, num) * 2;
+    else if (num == tree->content)
+        value = 0;
+    else
+        value = fun7(tree->right, num) * 2 + 1;
+
+    return value;
+}
+
+void secret_phase(void)
+{
+    unsigned    input;
+    int         num;
+
+    input = read_line();
+
+    num = strtol(input, NULL, 10);
+
+    if (num > 1001)
+        explode_bomb();
+
+    num = fun7(n1, num);
+    if (num != 7)
+        explode_bomb();
+
+    printf("Wow! You've defused the secret stage!\n");
+
+    phase_defused();
+}
+
+void    phase_defused()
+{
+    int         n_conv;
+    unsigned    num;
+    unsigned    str;
+
+    if (num_input_strings == 6) {
+        n_conv = sscanf(input_strings + 3, "%d %s", &num, &str);
+        if (n_conv == 2) {
+            if (strings_not_equal(&str, "austinpowers") == 0) {
+                printf("Curses, you've found the secret phase!\n");
+                printf("But finding it and solving it are quite different...\n");
+                secret_phase();
+            }
+        }
+        printf("Congratulations! You've defused the bomb!\n");
+    }
+}
+```
+
+To reach the secret phase the program expects us to enter a string with the contents `austinpowers` in the 4th phase, after the normal number.
+
+Afterwards, a line is read from standard input, and the contents are converted to a number. The bomb explodes if the number exceeds 1001.
+
+Then a function called `fun7` is called, which seems to search a value inside of a binary tree. If the value is found, it returns a value depending on it's path.
+
+The function's result describes the path to the value in a binary format.
+When a bit is on, the path goes to the right node, otherwise it goes to the left node.
+
+I wrote a python script to visualize the binary tree stored in the binary's data starting at `n1`.
+
+```python
+./r2tree.py
+```
+```c
+         ┌> 1
+      ┌> 6
+      |  └> 7
+   ┌> 8
+   |  |  ┌> 20
+   |  └> 22
+   |     └> 35
+─> 36
+   |     ┌> 40
+   |  ┌> 45
+   |  |  └> 47
+   └> 50
+      |  ┌> 99
+      └> 107
+         └> 1001
+```
+
+The expected path value is `7`. The number `7` can be represented like this: `0b111`.
+
+This means the path should go right, right, right.
+
+Going this path leads us to the number 1001.
+
+Expected input:
+```
+1001
+```
+
+Using this input we can solve the secret stage:
+```sh
+BONUS=true ./solve.sh | bomb
+```
+```
+Welcome this is my little bomb !!!! You have 6 stages with
+only one life good luck !! Have a nice day!
+Phase 1 defused. How about the next one?
+That's number 2.  Keep going!
+Halfway there!
+So you got that one.  Try this one.
+Good work!  On to the next...
+Curses, you've found the secret phase!
+But finding it and solving it are quite different...
+Wow! You've defused the secret stage!
+Congratulations! You've defused the bomb!
+```
