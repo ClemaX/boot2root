@@ -33,11 +33,19 @@ Commands:
 If no argument is provided, 'up' will be assumed."
 }
 
-print_ssh_usage()
+print_ssh_usage() # progname
 {
-	echo -e "Usage: $0 ssh user[:pass]"
+	local progname="${1:-ssh}"
+
+	echo -e "Usage: $0 $progname user[:pass]"
 }
 
+print_scp_usage() #progname
+{
+	local progname="${1:-scp}"
+
+	echo -e "Usage: $0 $progname user[:pass] source ... target\n\nLocations on the vm should be prefixed with a colon character (':')."
+}
 print_vm_stopped()
 {
 	echo -e "'$vm_name' is not running!
@@ -188,36 +196,35 @@ vm_ipv4()
 	fi
 }
 
-vm_ssh() # user
+vm_ssh_port()
 {
-	local user="${1:-}"
+	local port
 
-	if [ -z "$user" ]
+	if [ "$vm_net" = nat ]
 	then
-		echo "$0: ssh: Missing user argument." >&2
-		print_ssh_usage >&2
-		return 1
+		port="$host_ssh_port"
+	else
+		port="$vm_ssh_port"
 	fi
+
+	echo "$port"
+}
+
+vm_pass() # pass cmd
+{
+	local pass="${1:-}"; shift
+	local cmd=("${@}")
 
 	if vm_running
 	then
-		if [ "$vm_net" = nat ]
-		then
-			local port="$host_ssh_port"
-		else
-			local port="$vm_ssh_port"
-		fi
-
-		local pass="${user##*:}"
-
 		# Set TERM=xterm if using alacritty or termite
 		[ "$TERM" = alacritty ] || [ "$TERM" = "xterm-termite" ] && TERM=xterm
 
 		if [ -n "$pass" ]
 		then
-			"$(dirname "$0")/utils/pass.exp" "$pass" ssh -o "UserKnownHostsFile=/dev/null" -p "$port" "${user%%:*}@$(vm_ipv4)"
+			"$(dirname "$0")/utils/pass.exp" "$pass" "${cmd[@]}"
 		else
-			ssh -o "UserKnownHostsFile=/dev/null" -p "$port" "$user@$(vm_ipv4)"
+			"${cmd[@]}"
 		fi
 	else
 		print_vm_stopped >&2
@@ -225,11 +232,68 @@ vm_ssh() # user
 	fi
 }
 
+vm_ssh() # user
+{
+	local user="${1:-}"; shift
+
+	local pass host port
+
+	if [ -z "$user" ]
+	then
+		echo "$0: ssh: Missing user argument." >&2
+		print_ssh_usage ssh >&2
+		return 1
+	fi
+
+	pass="${user##*:}"
+	host=$(vm_ipv4)
+	port=$(vm_ssh_port)
+
+	vm_pass "$pass" ssh -o "UserKnownHostsFile=/dev/null" -p "$port" "$@" "${user%%:*}@$(vm_ipv4)"
+}
+
+vm_scp() # user source ... target
+{
+	local user="${1:-}"; shift
+
+	local pass host port files file
+
+	if [ -z "$user" ]
+	then
+		echo "$0: scp: Missing user argument." >&2
+		print_ssh_usage scp >&2
+		return 1
+	fi
+
+	files=("$@")
+
+	if [ ${#files[@]} -lt 2 ]
+	then
+		echo "$0: scp: Missing source and/or target argument." >&2
+		print_scp_usage scp >&2
+		return 1
+	fi
+
+	pass="${user##*:}"
+	host=$(vm_ipv4)
+	port=$(vm_ssh_port)
+
+	for (( i=0; i<$#; ++i ))
+	do
+		file="${files[i]}"
+
+		[ "${file:0:1}" = : ] && files[i]="${user%%:*}@$host:${file:1}"
+	done
+
+	vm_pass "$pass" scp -o "UserKnownHostsFile=/dev/null" -P "$port" "${files[@]}"
+}
+
 case "${1:-}" in
 	"up" | ""	)	vm_up;;
 	"down"		)	vm_down;;
 	"ip"		)	vm_ipv4;;
 	"ssh"		)	shift; vm_ssh "$@";;
+	"scp"		)	shift; vm_scp "$@";;
 	"help"		)	print_help;;
 	*			)	print_help && exit 1;;
 esac
