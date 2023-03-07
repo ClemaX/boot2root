@@ -1289,9 +1289,11 @@ One of the following combinations must be used to prevent the bomb from explodin
 |     6    |     v     |    780   |
 |     7    |     b     |    524   |
 
+According to the hint, the input should contain the character `b`.
+
 Expected input:
 ```
-0 q 777
+1 b 214
 ```
 
 #### phase 4
@@ -1614,4 +1616,90 @@ Curses, you've found the secret phase!
 But finding it and solving it are quite different...
 Wow! You've defused the secret stage!
 Congratulations! You've defused the bomb!
+```
+
+Using the hint we can now construct thor's password:
+```
+Publicspeakingisveryeasy.126241207201b2149opekmq426135
+```
+
+Using this password we can now switch users:
+```bash
+su thor
+```
+```
+thor@BornToSecHackMe:~$
+```
+
+### turtle
+
+```bash
+cat README
+```
+```
+Finish this challenge and use the result as password for 'zaz' user.
+```
+
+```bash
+file turtle
+```
+```
+turtle: ASCII text
+```
+
+```bash
+head turtle
+```
+```
+Tourne gauche de 90 degrees
+Avance 50 spaces
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+Avance 1 spaces
+Tourne gauche de 1 degrees
+```
+
+The challenge seems to be a reference to a Minecraft mod called ComputerCraft. In this mod there are programmable "turtles" that can move and interact with the world.
+
+The `turtle` file seems to contain instructions that describe a path.
+
+I wrote a script to parse the instructions and translate them into a more structured format.
+```bash
+./translate.sh < turtle > translated
+```
+
+From there, I wrote a simple html document containing a canvas and a script that parses the instructions and renders the resulting path to the canvas.
+
+By running each instruction block, I got the following resulting images:
+
+![Drawing of the first letter](users/thor/turtle/0.png)
+![Drawing of the second letter](users/thor/turtle/1.png)
+![Drawing of the third letter](users/thor/turtle/2.png)
+![Drawing of the fourth letter](users/thor/turtle/3.png)
+![Drawing of the fifth letter](users/thor/turtle/4.png)
+
+Looking at the sequence, we can read the word `SLASH`.
+
+Using `slash` or `SLASH` as the password does not work. Looking closely at the end of the `turtle` file we can find the following hint:
+```
+Can you digest the message? :)
+```
+
+Let's try md5 to digest the message:
+```bash
+echo -n 'SLASH' | md5sum
+```
+```
+646da671ca01bb5d84dbb5fb2238dc8e  -
+```
+
+```bash
+su zaz
+```
+```
+zaz@BornToSecHackMe:~$
 ```

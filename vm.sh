@@ -210,11 +210,14 @@ vm_ssh() # user
 
 		local pass="${user##*:}"
 
+		# Set TERM=xterm if using alacritty or termite
+		[ "$TERM" = alacritty ] || [ "$TERM" = "xterm-termite" ] && TERM=xterm
+
 		if [ -n "$pass" ]
 		then
-			"$(dirname "$0")/utils/pass.exp" "$pass" ssh -p "$port" "${user%%:*}@$(vm_ipv4)"
+			"$(dirname "$0")/utils/pass.exp" "$pass" ssh -o "UserKnownHostsFile=/dev/null" -p "$port" "${user%%:*}@$(vm_ipv4)"
 		else
-			ssh -p "$port" "$user@$(vm_ipv4)"
+			ssh -o "UserKnownHostsFile=/dev/null" -p "$port" "$user@$(vm_ipv4)"
 		fi
 	else
 		print_vm_stopped >&2
