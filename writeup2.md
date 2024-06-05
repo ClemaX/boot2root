@@ -1710,5 +1710,5 @@ Because it's setuid bit is set to root, we will win if we can find a way to spaw
 
 payload :
 ```
-ladida 
+
 ```
