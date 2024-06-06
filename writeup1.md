@@ -710,6 +710,5 @@ root@BornToSecHackMe:~# whoami
 whoami
 root
 
-
 ```
-
+Success !
