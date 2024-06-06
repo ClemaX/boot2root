@@ -1620,6 +1620,16 @@ Congratulations! You've defused the bomb!
 
 Using the hint we can now construct thor's password:
 ```
+Publicspeakingisveryeasy.126241207201b2149opekmq426315
+```
+
+After trying to logging in, this password seems to be invalid, but there is a hint in the subject about this challenge:
+
+    For the part related to a (bin) bomb: If the password found is
+    123456. The password to use is 123546.
+
+So let's try swapping the last digits according to the hint:
+```
 Publicspeakingisveryeasy.126241207201b2149opekmq426135
 ```
 
