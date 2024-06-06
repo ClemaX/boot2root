@@ -4,7 +4,7 @@ set -euo pipefail
 
 host_ssh_port=22
 
-iso_url="https://projects.intra.42.fr/uploads/document/document/7198/BornToSecHackMe-v1.1.iso"
+iso_url="https://cdn.intra.42.fr/isos/BornToSecHackMe-v1.1.iso"
 
 [ -d "$HOME/goinfre" ] && vm_dir="$HOME/goinfre" || vm_dir="$PWD"
 
@@ -14,7 +14,7 @@ vm_name="Boot2Root"
 vm_ram="1024"
 vm_vram="0"
 vm_gfx="none"
-vm_net="hostonly" # hostonly bridged
+vm_net="hostonly" # hostonly bridged nat
 vm_bridge_adapter="en0"
 vm_hostonly_adapter="vboxnet0"
 
